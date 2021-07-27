@@ -4,6 +4,7 @@ from kaggle.api.kaggle_api_extended import KaggleApi
 import pandas as pd
 from zipfile import ZipFile
 import numpy as np
+import json
 
 
 import plotly.express as px
@@ -15,6 +16,7 @@ import plotly.graph_objects as go
 import dash
 import dash_table
 import pandas as pd
+
 
 
 def index(request):
@@ -33,24 +35,27 @@ def index(request):
 
     #read data
     df=pd.read_csv('country_vaccinations.csv')
+    df = df.drop(['iso_code','daily_vaccinations_raw'], axis=1)
+    grouped_df = df.groupby("country")
+    maximums = grouped_df.max()
+    maximums = maximums.reset_index()
+    result = maximums.to_json(orient="split")
+    parsed = json.loads(result)
+    with open('data.json', 'w+') as outfile:
+        json.dump(parsed, outfile)
     
  
 
     fig = go.Figure(data=[go.Table(
-    header=dict(values=list(df.columns),
-                fill_color='paleturquoise',
-                align='left'),
-    cells=dict(values=[df.country, df.iso_code, df.date, df.total_vaccinations],
-               fill_color='lavender',
+    header=dict(values=list(maximums.columns)),
+    cells=dict(values=[maximums.country, maximums.date, maximums.total_vaccinations, maximums.vaccines],
+               fill_color='white', 
                align='left'))
                ])
-    fig.write_html('vaccinedata/templates/test3.html')
-
-
-
-
-
+    fig.write_html('vaccinedata/static/table.html')
+    print('hi there!')
     return render(request,'index.html',{})
+    
 
 
 
